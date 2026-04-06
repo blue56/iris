@@ -24,8 +24,8 @@ jobs:
       with:
         dotnet-version: 9.0.x
     - name: Restore dependencies
-      run: dotnet restore Iris/Iris.csproj
+      run: dotnet restore Iris/Iris/Iris.csproj
     - name: Build
-      run: dotnet build Iris/Iris.csproj --no-restore
+      run: dotnet build Iris/Iris/Iris.csproj --no-restore
     - name: Test
-      run: dotnet test Iris/Iris.csproj --no-build --verbosity normal
+      run: dotnet test Iris/Iris/Iris.csproj --no-build --verbosity normal
