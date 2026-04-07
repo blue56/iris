@@ -1,5 +1,4 @@
 name: Publish Iris.Plugins.Contracts
-name: Publish Iris.Plugins.Contracts
 
 on:
   workflow_dispatch:
