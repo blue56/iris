@@ -144,5 +144,4 @@ public sealed class PluginBootstrapService : IHostedService
             }
         }
     }
-
 }

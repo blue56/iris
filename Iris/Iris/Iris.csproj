@@ -18,6 +18,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Iris.Core\Iris.Core.csproj" />
+    <ProjectReference Include="..\Iris.Plugins\Iris.Plugins.csproj" ReferenceOutputAssembly="false" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.5" />

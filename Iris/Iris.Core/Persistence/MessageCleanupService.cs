@@ -59,7 +59,6 @@ public sealed class MessageCleanupService<TMessage> : BackgroundService
             }
             catch (OperationCanceledException)
             {
-                // Expected during shutdown
                 break;
             }
             catch (Exception ex)

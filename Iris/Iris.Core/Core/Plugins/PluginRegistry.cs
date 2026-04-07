@@ -48,7 +48,7 @@ public sealed class PluginRegistry : IPluginRegistry
         }
         else
         {
-            _logger.LogInformation("Registered target: {Type} (as '{TargetName}')", 
+            _logger.LogInformation("Registered target: {Type} (as '{TargetName}')",
                 target.GetType().Name, target.Name);
         }
     }

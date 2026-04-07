@@ -24,6 +24,11 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
 
     protected override Assembly? Load(AssemblyName assemblyName)
     {
+        if (IsSharedAssembly(assemblyName))
+        {
+            return null;
+        }
+
         var assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
 
         // Only load from this context if the DLL lives inside the plugin directory.
@@ -38,6 +43,19 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
 
         // Returning null delegates to the default (host) context.
         return null;
+    }
+
+    private static bool IsSharedAssembly(AssemblyName assemblyName)
+    {
+        var name = assemblyName.Name;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return false;
+        }
+
+        return name.StartsWith("Iris.", StringComparison.Ordinal) ||
+               name.StartsWith("Microsoft.Extensions.", StringComparison.Ordinal) ||
+               string.Equals(name, "Microsoft.Data.Sqlite", StringComparison.Ordinal);
     }
 
     protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
@@ -75,7 +93,7 @@ public sealed class DynamicPluginLoader : IDisposable
     /// <param name="searchPattern">File pattern to search for (default: *.dll)</param>
     /// <returns>List of discovered plugin types with their metadata</returns>
     public async Task<List<PluginTypeInfo>> LoadPluginsFromDirectoryAsync(
-        string directory, 
+        string directory,
         string searchPattern = "*.dll")
     {
         if (!Directory.Exists(directory))

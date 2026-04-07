@@ -43,14 +43,12 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
             using var connection = new SqliteConnection(_connectionString);
             await connection.OpenAsync(cancellationToken);
 
-            // Enable Write-Ahead Logging for better concurrency
             using (var walCommand = connection.CreateCommand())
             {
                 walCommand.CommandText = "PRAGMA journal_mode=WAL;";
                 await walCommand.ExecuteNonQueryAsync(cancellationToken);
             }
 
-            // Create schema if it doesn't exist
             using var command = connection.CreateCommand();
             command.CommandText = _serializationStrategy.GetCreateTableSql();
             await command.ExecuteNonQueryAsync(cancellationToken);
@@ -96,7 +94,6 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
             using var transaction = connection.BeginTransaction();
             try
             {
-                // Check if message already exists (deduplication)
                 using (var checkCommand = connection.CreateCommand())
                 {
                     checkCommand.Transaction = transaction;
@@ -111,13 +108,11 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
                     }
                 }
 
-                // Insert new message
                 using (var insertCommand = connection.CreateCommand())
                 {
                     insertCommand.Transaction = transaction;
                     insertCommand.CommandText = _serializationStrategy.GetInsertSql();
 
-                    // Add common parameters
                     insertCommand.Parameters.AddWithValue("@messageId", message.MessageId);
                     insertCommand.Parameters.AddWithValue("@payload", message.Payload);
                     insertCommand.Parameters.AddWithValue("@receivedAt", message.ReceivedAt.ToUnixTimeMilliseconds());
@@ -125,7 +120,6 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
                     insertCommand.Parameters.AddWithValue("@attemptCount", message.AttemptCount);
                     insertCommand.Parameters.AddWithValue("@metadataJson", message.MetadataJson ?? (object)DBNull.Value);
 
-                    // Add message-specific parameters
                     _serializationStrategy.AddInsertParameters(insertCommand, message);
 
                     await insertCommand.ExecuteNonQueryAsync(cancellationToken);
@@ -243,7 +237,6 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
 
             using var command = connection.CreateCommand();
 
-            // If max retries exceeded, mark as Failed permanently, otherwise keep as Pending for retry
             var status = attemptCount >= _options.Buffering.MaxRetryAttempts 
                 ? MessageStatus.Failed 
                 : MessageStatus.Pending;
@@ -347,7 +340,6 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
             }
         }
 
-        // Get database file size
         if (File.Exists(_options.DatabasePath))
         {
             stats.DatabaseSizeBytes = new FileInfo(_options.DatabasePath).Length;
@@ -359,8 +351,6 @@ public sealed class SqliteMessageStore<TMessage> : IMessageStore<TMessage>, IDis
     public void Dispose()
     {
         _writeLock?.Dispose();
-
-        // Close any pooled connections
         SqliteConnection.ClearAllPools();
     }
 }
