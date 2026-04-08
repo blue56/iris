@@ -24,6 +24,9 @@ jobs:
     runs-on: windows-latest
     permissions:
       contents: read
+    env:
+      RUNTIME_IDENTIFIER: win-x64
+      ARTIFACT_NAME: Iris.Plugins-win-x64-self-contained
     defaults:
       run:
         working-directory: Iris
@@ -38,14 +41,21 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore
-        run: dotnet restore Iris.Plugins/Iris.Plugins.csproj
+        run: dotnet restore Iris.Plugins/Iris.Plugins.csproj --runtime ${{ env.RUNTIME_IDENTIFIER }}
 
-      - name: Build plugin
-        run: dotnet build Iris.Plugins/Iris.Plugins.csproj --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+      - name: Publish self-contained plugin
+        run: >
+          dotnet publish Iris.Plugins/Iris.Plugins.csproj
+          --configuration Release
+          --runtime ${{ env.RUNTIME_IDENTIFIER }}
+          --self-contained true
+          --no-restore
+          --output artifacts/${{ env.ARTIFACT_NAME }}
+          -p:ContinuousIntegrationBuild=true
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Iris.Plugins
-          path: Iris/Iris/bin/Release/net9.0/plugins
+          name: ${{ env.ARTIFACT_NAME }}
+          path: Iris/artifacts/${{ env.ARTIFACT_NAME }}
           if-no-files-found: error
