@@ -5,8 +5,9 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <!-- Write private NuGet deps (MQTTnet, SQLite) to the output folder so we can
-         copy them to the plugins\ directory. Shared host assemblies (Microsoft.Extensions.*,
-         Iris.dll, etc.) are excluded from the copy via the target below. -->
+         copy them into this plugin's own subfolder under plugins\. Shared host
+         assemblies (Microsoft.Extensions.*, Iris.dll, etc.) are excluded from the
+         copy via the target below. -->
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
 
@@ -16,15 +17,17 @@
   </ItemGroup>
 
   <!-- Copy ONLY the assemblies that are private to this plugin (not already present in the
-       host output directory) into plugins\. PluginLoadContext resolves MQTTnet and SQLite
-       from here; all shared types (Microsoft.Extensions.*, Iris.dll, …) fall through to the
-       default context so their type identities stay consistent with the DI container. -->
+       host output directory) into plugins\$(AssemblyName)\. PluginLoadContext resolves
+       MQTTnet and SQLite from this plugin-specific folder; all shared types
+       (Microsoft.Extensions.*, Iris.dll, …) fall through to the default context so
+       their type identities stay consistent with the DI container. -->
   <Target Name="CopyPluginsToOutput" AfterTargets="Build">
     <PropertyGroup>
       <_HostOutputDir>$(MSBuildThisFileDirectory)..\Iris\bin\$(Configuration)\net9.0\</_HostOutputDir>
-      <_PluginDestDir>$(_HostOutputDir)plugins\</_PluginDestDir>
+      <_PluginRootDir>$(_HostOutputDir)plugins\</_PluginRootDir>
+      <_PluginDestDir>$(_PluginRootDir)$(AssemblyName)\</_PluginDestDir>
     </PropertyGroup>
-    <MakeDir Directories="$(_PluginDestDir)" />
+    <MakeDir Directories="$(_PluginRootDir);$(_PluginDestDir)" />
 
     <ItemGroup>
       <_StaleSharedPluginDlls Include="$(_PluginDestDir)Iris.Core.dll" />
@@ -40,11 +43,18 @@
     </ItemGroup>
 
     <!-- … then keep only those whose filename does NOT already exist in the host root.
-         This leaves just Iris.Plugins.dll, MQTTnet.dll, Microsoft.Data.Sqlite.dll and
-         the SQLitePCLRaw.* stack — the assemblies the host has no copy of. -->
+         This leaves just the plugin-private assemblies that should live in this
+         plugin's dedicated subfolder. -->
     <ItemGroup>
       <_PrivatePluginDlls Include="@(_AllPluginDlls)" Condition="!Exists('$(_HostOutputDir)%(Filename)%(Extension)')" />
+      <_LegacyPluginRootFiles Include="$(_PluginRootDir)*.*" />
+      <_LegacyFlatPluginFiles Include="@(_PrivatePluginDlls->'$(_PluginRootDir)%(Filename)%(Extension)')" />
+      <_LegacyFlatPluginFiles Include="$(_PluginRootDir)$(AssemblyName).deps.json" />
     </ItemGroup>
+
+    <Delete Files="@(_LegacyPluginRootFiles)" TreatErrorsAsWarnings="true" />
+    <Delete Files="@(_LegacyFlatPluginFiles)" TreatErrorsAsWarnings="true" />
+    <RemoveDir Directories="$(_PluginRootDir)runtimes" ContinueOnError="WarnAndContinue" />
 
     <Copy SourceFiles="@(_PrivatePluginDlls)" DestinationFolder="$(_PluginDestDir)" SkipUnchangedFiles="true" />
 
