@@ -10,8 +10,9 @@ namespace Iris.Core.Plugins;
 /// <summary>
 /// Hosted service that initializes and registers plugins before the pipeline engine starts.
 /// All plugin assemblies are loaded through <see cref="PluginLoadContext"/> so each plugin
-/// resolves its own private dependencies (MQTTnet, SQLite, etc.) from its own directory
-/// without requiring them to be present in the host output directory.
+/// resolves its own private dependencies (MQTTnet, SQLite, etc.) from its own subfolder
+/// under the configured plugin directories without requiring them to be present in the
+/// host output directory.
 /// </summary>
 public sealed class PluginBootstrapService : IHostedService
 {

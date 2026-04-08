@@ -143,13 +143,14 @@ Since dynamic loading isn't implemented yet, to use these plugins:
 
 In Phase 2, the `DynamicPluginLoader` will automatically discover and load plugins from this assembly without any code changes.
 
-## Using These Plugins (Future - Phase 2)
+## Using These Plugins
 
-Once dynamic loading is implemented, simply:
+Dynamic loading is implemented. To use the built plugin payload:
 
-1. Build `Iris.Plugins.dll`
-2. Place in the plugins directory (e.g., `plugins/`)
-3. Configure in `appsettings.yaml`:
+1. Build the `Iris.Plugins` project
+2. Place the output in its own subfolder under the plugins directory (for example `plugins/Iris.Plugins/`)
+3. Keep `Iris.Plugins.dll`, `Iris.Plugins.deps.json`, and the plugin-private dependencies together in that subfolder
+4. Configure in `appsettings.yaml`:
 
 ```yaml
 pluginSystem:

@@ -73,6 +73,8 @@ internal sealed class PluginLoadContext : AssemblyLoadContext
 
 /// <summary>
 /// Loads plugins dynamically from external assemblies at runtime.
+/// Scans plugin directories recursively and only treats DLLs with a sibling
+/// <c>.deps.json</c> file as plugin entry assemblies.
 /// Uses AssemblyLoadContext for proper assembly isolation.
 /// </summary>
 public sealed class DynamicPluginLoader : IDisposable
@@ -87,9 +89,9 @@ public sealed class DynamicPluginLoader : IDisposable
     }
 
     /// <summary>
-    /// Scans a directory and loads all plugin assemblies.
+    /// Scans a directory recursively and loads all plugin entry assemblies.
     /// </summary>
-    /// <param name="directory">Directory containing plugin DLL files</param>
+    /// <param name="directory">Root plugin directory containing per-plugin subfolders</param>
     /// <param name="searchPattern">File pattern to search for (default: *.dll)</param>
     /// <returns>List of discovered plugin types with their metadata</returns>
     public async Task<List<PluginTypeInfo>> LoadPluginsFromDirectoryAsync(
@@ -105,7 +107,10 @@ public sealed class DynamicPluginLoader : IDisposable
         _logger.LogInformation("Scanning for plugins in: {Directory}", directory);
 
         var pluginTypes = new List<PluginTypeInfo>();
-        var dllFiles = Directory.GetFiles(directory, searchPattern);
+        var dllFiles = Directory
+            .EnumerateFiles(directory, searchPattern, SearchOption.AllDirectories)
+            .Where(path => File.Exists(Path.ChangeExtension(path, ".deps.json")))
+            .ToList();
 
         foreach (var dllPath in dllFiles)
         {
