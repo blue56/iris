@@ -6,11 +6,18 @@ namespace Iris.Core.Plugins;
 /// <summary>
 /// Unified plugin factory that supports both built-in and dynamically loaded plugins.
 /// </summary>
+/// <remarks>
+/// Maintains two separate type registries:
+/// <list type="bullet">
+///   <item><term>Connector types</term><description>Domain integrations that originate messages — <em>what</em> you are talking to (e.g. ASTM, LIMS, OPC-UA).</description></item>
+///   <item><term>Transport types</term><description>Protocol channels that deliver messages — <em>how</em> data moves (e.g. MQTT, HTTP, Kafka).</description></item>
+/// </list>
+/// </remarks>
 public sealed class UnifiedPluginFactory : IPluginFactory
 {
     private readonly ILogger<UnifiedPluginFactory> _logger;
-    private readonly Dictionary<string, Type> _sourceTypes = new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, Type> _targetTypes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Type> _transportTypes = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Type> _connectorTypes = new(StringComparer.OrdinalIgnoreCase);
 
     public UnifiedPluginFactory(ILogger<UnifiedPluginFactory> logger)
     {
@@ -23,104 +30,104 @@ public sealed class UnifiedPluginFactory : IPluginFactory
     /// <param name="pluginTypes">Plugin types discovered by DynamicPluginLoader</param>
     public void RegisterDynamicPlugins(IEnumerable<PluginTypeInfo> pluginTypes)
     {
-        int sourceCount = 0;
-        int targetCount = 0;
+        int transportCount = 0;
+        int connectorCount = 0;
 
         foreach (var pluginInfo in pluginTypes)
         {
             var friendlyName = pluginInfo.Metadata.Name;
 
-            if (pluginInfo.IsSource)
+            if (pluginInfo.IsConnector)
             {
-                RegisterSourceType(friendlyName, pluginInfo.Type);
-                sourceCount++;
+                RegisterConnectorType(friendlyName, pluginInfo.Type);
+                connectorCount++;
             }
 
-            if (pluginInfo.IsTarget)
+            if (pluginInfo.IsTransport)
             {
-                RegisterTargetType(friendlyName, pluginInfo.Type);
-                targetCount++;
+                RegisterTransportType(friendlyName, pluginInfo.Type);
+                transportCount++;
             }
         }
 
         _logger.LogInformation(
-            "Registered {SourceCount} dynamic source(s) and {TargetCount} dynamic target(s)",
-            sourceCount, targetCount);
+            "Registered {ConnectorCount} dynamic connector(s) and {TransportCount} dynamic transport(s)",
+            connectorCount, transportCount);
     }
 
     /// <summary>
-    /// Registers a source plugin type.
+    /// Registers a transport plugin type.
     /// </summary>
-    public void RegisterSourceType(string name, Type type)
+    public void RegisterTransportType(string name, Type type)
     {
-        if (_sourceTypes.ContainsKey(name))
+        if (_transportTypes.ContainsKey(name))
         {
-            _logger.LogWarning("Source type '{Name}' is already registered. Overwriting with {Type}", name, type.Name);
+            _logger.LogWarning("Transport type '{Name}' is already registered. Overwriting with {Type}", name, type.Name);
         }
 
-        _sourceTypes[name] = type;
-        _logger.LogDebug("Registered source type: {Name} -> {Type}", name, type.FullName);
+        _transportTypes[name] = type;
+        _logger.LogDebug("Registered transport type: {Name} -> {Type}", name, type.FullName);
     }
 
     /// <summary>
-    /// Registers a target plugin type.
+    /// Registers a connector plugin type.
     /// </summary>
-    public void RegisterTargetType(string name, Type type)
+    public void RegisterConnectorType(string name, Type type)
     {
-        if (_targetTypes.ContainsKey(name))
+        if (_connectorTypes.ContainsKey(name))
         {
-            _logger.LogWarning("Target type '{Name}' is already registered. Overwriting with {Type}", name, type.Name);
+            _logger.LogWarning("Connector type '{Name}' is already registered. Overwriting with {Type}", name, type.Name);
         }
 
-        _targetTypes[name] = type;
-        _logger.LogDebug("Registered target type: {Name} -> {Type}", name, type.FullName);
+        _connectorTypes[name] = type;
+        _logger.LogDebug("Registered connector type: {Name} -> {Type}", name, type.FullName);
     }
 
-    public ISource? CreateSource(string typeName, IServiceProvider services)
+    public ITransport? CreateTransport(string typeName, IServiceProvider services, params object[] parameters)
     {
-        if (!_sourceTypes.TryGetValue(typeName, out var type))
+        if (!_transportTypes.TryGetValue(typeName, out var type))
         {
-            _logger.LogWarning("Unknown source type: {TypeName}. Available types: {Types}",
-                typeName, string.Join(", ", _sourceTypes.Keys));
+            _logger.LogWarning("Unknown transport type: {TypeName}. Available types: {Types}",
+                typeName, string.Join(", ", _transportTypes.Keys));
             return null;
         }
 
         try
         {
-            var instance = ActivatorUtilities.CreateInstance(services, type);
-            _logger.LogDebug("Created source instance: {TypeName} ({Type})", typeName, type.Name);
-            return instance as ISource;
+            var instance = ActivatorUtilities.CreateInstance(services, type, parameters);
+            _logger.LogDebug("Created transport instance: {TypeName} ({Type})", typeName, type.Name);
+            return instance as ITransport;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create source of type {TypeName}", typeName);
+            _logger.LogError(ex, "Failed to create transport instance: {TypeName} ({Type})", typeName, type.Name);
             return null;
         }
     }
 
-    public ITarget? CreateTarget(string typeName, IServiceProvider services)
+    public IConnector? CreateConnector(string typeName, IServiceProvider services, params object[] parameters)
     {
-        if (!_targetTypes.TryGetValue(typeName, out var type))
+        if (!_connectorTypes.TryGetValue(typeName, out var type))
         {
-            _logger.LogWarning("Unknown target type: {TypeName}. Available types: {Types}",
-                typeName, string.Join(", ", _targetTypes.Keys));
+            _logger.LogWarning("Unknown connector type: {TypeName}. Available types: {Types}",
+                typeName, string.Join(", ", _connectorTypes.Keys));
             return null;
         }
 
         try
         {
-            var instance = ActivatorUtilities.CreateInstance(services, type);
-            _logger.LogDebug("Created target instance: {TypeName} ({Type})", typeName, type.Name);
-            return instance as ITarget;
+            var instance = ActivatorUtilities.CreateInstance(services, type, parameters);
+            _logger.LogDebug("Created connector instance: {TypeName} ({Type})", typeName, type.Name);
+            return instance as IConnector;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to create target of type {TypeName}", typeName);
+            _logger.LogError(ex, "Failed to create connector instance: {TypeName} ({Type})", typeName, type.Name);
             return null;
         }
     }
 
-    public IEnumerable<string> GetAvailableSourceTypes() => _sourceTypes.Keys;
+    public IEnumerable<string> GetAvailableTransportTypes() => _transportTypes.Keys;
 
-    public IEnumerable<string> GetAvailableTargetTypes() => _targetTypes.Keys;
+    public IEnumerable<string> GetAvailableConnectorTypes() => _connectorTypes.Keys;
 }

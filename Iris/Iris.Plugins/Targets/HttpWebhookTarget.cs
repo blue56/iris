@@ -11,16 +11,18 @@ namespace Iris.Plugins.Targets;
 /// Example plugin that posts messages to an HTTP endpoint.
 /// Useful for webhook integrations.
 /// </summary>
-[Plugin("HttpWebhookTarget", "1.0.0", PluginType.Target,
+[Plugin("HttpWebhookTarget", "1.0.0", PluginType.Transport,
     Author = "Iris Plugins",
     Description = "Posts messages to an HTTP webhook endpoint")]
-public sealed class HttpWebhookTarget : ITarget
+public sealed class HttpWebhookTarget : ITransport
 {
     private readonly ILogger<HttpWebhookTarget> _logger;
     private readonly HttpClient _httpClient;
     private readonly string _webhookUrl;
     private readonly string _name;
     private readonly int _maxRetries;
+
+    public event Func<DataMessage, Task>? MessageReceived;
 
     public string Name => _name;
 

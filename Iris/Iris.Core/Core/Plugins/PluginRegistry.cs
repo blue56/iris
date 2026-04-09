@@ -3,13 +3,18 @@ using Microsoft.Extensions.Logging;
 namespace Iris.Core.Plugins;
 
 /// <summary>
-/// Default implementation of the plugin registry.
+/// Default implementation of <see cref="IPluginRegistry"/>.
 /// </summary>
+/// <remarks>
+/// Maintains separate collections for connectors (domain integrations — what the
+/// agent talks to, e.g. ASTM, LIMS, OPC-UA) and transports (protocol channels —
+/// how data is moved, e.g. MQTT, HTTP webhook, Kafka).
+/// </remarks>
 public sealed class PluginRegistry : IPluginRegistry
 {
-    private readonly List<ISource> _sources = [];
-    private readonly List<ITarget> _targets = [];
-    private readonly Dictionary<string, ITarget> _targetsByName = new();
+    private readonly List<IConnector> _connectors = [];
+    private readonly List<ITransport> _transports = [];
+    private readonly Dictionary<string, ITransport> _transportsByName = new(StringComparer.OrdinalIgnoreCase);
     private readonly ILogger<PluginRegistry> _logger;
 
     public PluginRegistry(ILogger<PluginRegistry> logger)
@@ -17,66 +22,66 @@ public sealed class PluginRegistry : IPluginRegistry
         _logger = logger;
     }
 
-    public void RegisterSource(ISource source)
+    public void RegisterConnector(IConnector connector)
     {
-        _sources.Add(source);
+        _connectors.Add(connector);
 
-        var metadata = GetMetadata(source);
+        var metadata = GetMetadata(connector);
         if (metadata != null)
         {
             _logger.LogInformation(
-                "Registered source plugin: {Name} v{Version} by {Author}",
-                metadata.Name, metadata.Version, metadata.Author);
+                "Registered connector plugin: {Name} v{Version} by {Author} (as '{ConnectorName}')",
+                metadata.Name, metadata.Version, metadata.Author, connector.Name);
         }
         else
         {
-            _logger.LogInformation("Registered source: {Type}", source.GetType().Name);
+            _logger.LogInformation("Registered connector: {Type} (as '{ConnectorName}')", connector.GetType().Name, connector.Name);
         }
     }
 
-    public void RegisterTarget(ITarget target)
+    public void RegisterTransport(ITransport transport)
     {
-        _targets.Add(target);
-        _targetsByName[target.Name] = target;
+        _transports.Add(transport);
+        _transportsByName[transport.Name] = transport;
 
-        var metadata = GetMetadata(target);
+        var metadata = GetMetadata(transport);
         if (metadata != null)
         {
             _logger.LogInformation(
-                "Registered target plugin: {Name} v{Version} by {Author} (as '{TargetName}')",
-                metadata.Name, metadata.Version, metadata.Author, target.Name);
+                "Registered transport plugin: {Name} v{Version} by {Author} (as '{TransportName}')",
+                metadata.Name, metadata.Version, metadata.Author, transport.Name);
         }
         else
         {
-            _logger.LogInformation("Registered target: {Type} (as '{TargetName}')",
-                target.GetType().Name, target.Name);
+            _logger.LogInformation("Registered transport: {Type} (as '{TransportName}')",
+                transport.GetType().Name, transport.Name);
         }
     }
 
-    public IEnumerable<ISource> GetSources() => _sources;
+    public IEnumerable<IConnector> GetConnectors() => _connectors;
 
-    public IEnumerable<ITarget> GetTargets() => _targets;
+    public IEnumerable<ITransport> GetTransports() => _transports;
 
-    public ITarget? GetTarget(string name)
+    public ITransport? GetTransport(string name)
     {
-        _targetsByName.TryGetValue(name, out var target);
-        return target;
+        _transportsByName.TryGetValue(name, out var transport);
+        return transport;
     }
 
     public IEnumerable<IPluginMetadata> GetAllPluginMetadata()
     {
         var metadata = new List<IPluginMetadata>();
 
-        foreach (var source in _sources)
+        foreach (var connector in _connectors)
         {
-            var meta = GetMetadata(source);
+            var meta = GetMetadata(connector);
             if (meta != null)
                 metadata.Add(meta);
         }
 
-        foreach (var target in _targets)
+        foreach (var transport in _transports)
         {
-            var meta = GetMetadata(target);
+            var meta = GetMetadata(transport);
             if (meta != null)
                 metadata.Add(meta);
         }

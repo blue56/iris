@@ -17,7 +17,7 @@ public sealed class DynamicLoadingOptions
     public bool Enabled { get; set; } = false;
 
     /// <summary>Directories to scan for plugin DLL files.</summary>
-    public List<string> PluginDirectories { get; set; } = [];
+    public List<string> PackageDirectories { get; set; } = [];
 
     /// <summary>File pattern for plugin DLLs (default: *.dll).</summary>
     public string SearchPattern { get; set; } = "*.dll";

@@ -8,12 +8,21 @@ using Microsoft.Extensions.Options;
 namespace Iris.Core.Plugins;
 
 /// <summary>
-/// Hosted service that initializes and registers plugins before the pipeline engine starts.
-/// All plugin assemblies are loaded through <see cref="PluginLoadContext"/> so each plugin
-/// resolves its own private dependencies (MQTTnet, SQLite, etc.) from its own subfolder
-/// under the configured plugin directories without requiring them to be present in the
-/// host output directory.
+/// The agent loads packages and runs plugins.
+/// Hosted service that discovers, loads, and registers plugins before the pipeline
+/// engine starts.
 /// </summary>
+/// <remarks>
+/// Plugins are divided into two roles:
+/// <list type="bullet">
+///   <item><term>Connector</term><description>Models <em>what</em> is being integrated (ASTM, LIMS, OPC-UA). Originates <see cref="DataMessage"/> items.</description></item>
+///   <item><term>Transport</term><description>Models <em>how</em> data is moved (MQTT, HTTP, Kafka). Delivers messages over a protocol channel.</description></item>
+/// </list>
+/// All plugin assemblies are loaded through <see cref="PluginLoadContext"/> so each
+/// plugin resolves its own private dependencies (MQTTnet, SQLite, etc.) from its own
+/// subfolder under the configured plugin directories without requiring them to be
+/// present in the host output directory.
+/// </remarks>
 public sealed class PluginBootstrapService : IHostedService
 {
     private readonly IPluginRegistry _registry;
@@ -51,12 +60,12 @@ public sealed class PluginBootstrapService : IHostedService
         // Instantiate and register plugins based on configuration
         await LoadBuiltInPluginsAsync(cancellationToken);
 
-        var sources = _registry.GetSources().Count();
-        var targets = _registry.GetTargets().Count();
+        var connectors = _registry.GetConnectors().Count();
+        var transports = _registry.GetTransports().Count();
 
         _logger.LogInformation(
-            "Plugin bootstrap complete. Loaded {SourceCount} source(s) and {TargetCount} target(s).",
-            sources, targets);
+            "Plugin bootstrap complete. Loaded {ConnectorCount} connector(s) and {TransportCount} transport(s).",
+            connectors, transports);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -80,11 +89,11 @@ public sealed class PluginBootstrapService : IHostedService
 
         var config = _options.Value.PluginSystem.DynamicLoading;
         _logger.LogInformation("Scanning plugin directories: {Directories}",
-            string.Join(", ", config.PluginDirectories));
+            string.Join(", ", config.PackageDirectories));
 
         var allPluginTypes = new List<PluginTypeInfo>();
 
-        foreach (var directory in config.PluginDirectories)
+        foreach (var directory in config.PackageDirectories)
         {
             var fullPath = Path.IsPathRooted(directory)
                 ? directory

@@ -17,6 +17,9 @@ public interface IPluginMetadata
     /// <summary>Brief description of the plugin's functionality.</summary>
     string Description { get; }
 
-    /// <summary>Type of plugin (Source, Target, or Both).</summary>
+    /// <summary>
+    /// Whether the plugin is a <see cref="PluginType.Connector"/> (domain integration)
+    /// or a <see cref="PluginType.Transport"/> (protocol delivery channel).
+    /// </summary>
     PluginType Type { get; }
 }

@@ -1,4 +1,5 @@
 using Iris.Configuration;
+using Iris.Core;
 using Iris.Core.Plugins;
 using Iris.Plugins.Configuration;
 using Microsoft.Extensions.Configuration;
@@ -28,44 +29,46 @@ public sealed class BuiltInPluginActivator : IPluginActivator
         IServiceProvider services,
         CancellationToken cancellationToken)
     {
-        var fileReader = _configuration.GetSection("Sources:FileReader").Get<FileReaderOptions>() ?? new FileReaderOptions();
-        if (fileReader.Enabled)
+        var connectorsSection = _configuration.GetSection("Connectors");
+        foreach (var child in connectorsSection.GetChildren())
         {
-            var source = factory.CreateSource("FileReader", services);
-            if (source != null)
-                registry.RegisterSource(source);
-        }
+            var type = child["type"] ?? child.Key;
 
-        var fileWriter = _configuration.GetSection("Targets:FileWriter").Get<FileWriterOptions>() ?? new FileWriterOptions();
-        if (!string.IsNullOrWhiteSpace(fileWriter.OutputPath))
-        {
-            var target = factory.CreateTarget("FileWriter", services);
-            if (target != null)
-                registry.RegisterTarget(target);
-        }
+            ITransport? transport = null;
+            var transportSection = child.GetSection("Transport");
+            if (transportSection.Exists())
+            {
+                var tType = transportSection["type"] ?? "Unknown";
+                if (string.Equals(tType, "Mqtt", StringComparison.OrdinalIgnoreCase))
+                {
+                    var options = transportSection.Get<MqttOptions>() ?? new MqttOptions();
+                    if (!string.IsNullOrWhiteSpace(options.BrokerHost))
+                    {
+                        transport = factory.CreateTransport("Mqtt", services, options);
+                    }
+                }
+            }
 
-        var mqttListener = _configuration.GetSection("Sources:MqttListener").Get<MqttListenerOptions>() ?? new MqttListenerOptions();
-        if (mqttListener.Enabled)
-        {
-            var source = factory.CreateSource("MqttListener", services);
-            if (source != null)
-                registry.RegisterSource(source);
-            else
-                _logger.LogWarning(
-                    "MqttListener is enabled but not available. " +
-                    "Ensure Iris.Plugins.dll and its dependencies are present in the plugins directory.");
-        }
-
-        var mqtt = _configuration.GetSection("Targets:Mqtt").Get<MqttOptions>() ?? new MqttOptions();
-        if (!string.IsNullOrWhiteSpace(mqtt.BrokerHost))
-        {
-            var target = factory.CreateTarget("Mqtt", services);
-            if (target != null)
-                registry.RegisterTarget(target);
-            else
-                _logger.LogWarning(
-                    "Mqtt target is configured but not available. " +
-                    "Ensure Iris.Plugins.dll and its dependencies are present in the plugins directory.");
+            if (string.Equals(type, "FilesystemWatcher", StringComparison.OrdinalIgnoreCase))
+            {
+                var options = child.Get<FilesystemWatcherOptions>() ?? new FilesystemWatcherOptions();
+                options.Name = child.Key;
+                if (options.Enabled)
+                {
+                    var connector = factory.CreateConnector("FilesystemWatcher", services, options, transport!);
+                    if (connector != null) registry.RegisterConnector(connector);
+                }
+            }
+            else if (string.Equals(type, "FileWriter", StringComparison.OrdinalIgnoreCase))
+            {
+                var options = child.Get<FileWriterOptions>() ?? new FileWriterOptions();
+                options.Name = child.Key;
+                if (!string.IsNullOrWhiteSpace(options.OutputPath))
+                {
+                    var connector = factory.CreateConnector("FileWriter", services, options, transport!);
+                    if (connector != null) registry.RegisterConnector(connector);
+                }
+            }
         }
 
         await Task.CompletedTask;

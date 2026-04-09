@@ -208,28 +208,30 @@ public sealed class DynamicPluginLoader : IDisposable
             if (pluginAttribute == null)
                 continue;
 
-            // Validate that type implements ISource or ITarget
-            bool isSource = typeof(ISource).IsAssignableFrom(type);
-            bool isTarget = typeof(ITarget).IsAssignableFrom(type);
+            // Validate that type implements ITransport or IConnector
+            bool isTransport = typeof(ITransport).IsAssignableFrom(type);
+            bool isConnector = typeof(IConnector).IsAssignableFrom(type);
 
-            if (!isSource && !isTarget)
+            if (!isTransport && !isConnector)
             {
                 _logger.LogWarning(
-                    "Type {Type} has [Plugin] attribute but doesn't implement ISource or ITarget. Skipping.",
+                    "Type {Type} has [Plugin] attribute but implements neither IConnector (domain integration) " +
+                    "nor ITransport (protocol channel). Skipping.",
                     type.FullName);
                 continue;
             }
 
-            // Validate plugin type matches implementation
-            var expectedType = isSource && isTarget ? PluginType.Both :
-                             isSource ? PluginType.Source :
-                             PluginType.Target;
+            // Validate that the declared PluginType matches what the class actually implements.
+            // Connector = what you integrate with (ASTM, LIMS, OPC-UA).
+            // Transport = how data moves (MQTT, HTTP, Kafka).
+            var expectedType = isConnector ? PluginType.Connector : PluginType.Transport;
 
-            if (pluginAttribute.Type != expectedType && pluginAttribute.Type != PluginType.Both)
+            if (pluginAttribute.Type != expectedType)
             {
                 _logger.LogWarning(
-                    "Plugin {Name} declares type {Declared} but implements {Actual}",
-                    pluginAttribute.Name, pluginAttribute.Type, expectedType);
+                    "Plugin class '{ClassName}' (named '{Name}') declares PluginType.{Declared} but implements {Actual}. " +
+                    "Remember: Connector = what you integrate with; Transport = how data moves.",
+                    type.Name, pluginAttribute.Name, pluginAttribute.Type, expectedType);
             }
 
             var metadata = PluginMetadata.FromAttribute(pluginAttribute);
@@ -237,8 +239,8 @@ public sealed class DynamicPluginLoader : IDisposable
             {
                 Type = type,
                 Metadata = metadata,
-                IsSource = isSource,
-                IsTarget = isTarget,
+                IsTransport = isTransport,
+                IsConnector = isConnector,
                 Assembly = assembly
             };
 
@@ -273,7 +275,7 @@ public sealed class PluginTypeInfo
 {
     public required Type Type { get; init; }
     public required IPluginMetadata Metadata { get; init; }
-    public required bool IsSource { get; init; }
-    public required bool IsTarget { get; init; }
+    public required bool IsTransport { get; init; }
+    public required bool IsConnector { get; init; }
     public required Assembly Assembly { get; init; }
 }

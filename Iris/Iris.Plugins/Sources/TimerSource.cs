@@ -8,34 +8,35 @@ namespace Iris.Plugins.Sources;
 /// Example plugin that generates test messages on a timer.
 /// Useful for testing and demonstration purposes.
 /// </summary>
-[Plugin("TimerSource", "1.0.0", PluginType.Source,
+[Plugin("TimerSource", "1.0.0", PluginType.Connector,
     Author = "Iris Plugins",
     Description = "Generates test messages on a configurable timer interval")]
-public sealed class TimerSource : ISource, IDisposable
+public sealed class TimerSource : IConnector, IDisposable
 {
     private readonly ILogger<TimerSource> _logger;
     private readonly TimeSpan _interval;
-    private readonly List<string> _targetNames;
+    private readonly ITransport? _transport;
     private Timer? _timer;
     private int _messageCount;
 
     public event Func<DataMessage, Task>? MessageReceived;
-    public IReadOnlyList<string> TargetNames => _targetNames;
+    public ITransport? Transport => _transport;
+    public string Name { get; } = "timerSource";
 
     /// <summary>
     /// Creates a timer source that generates messages every interval.
     /// </summary>
     /// <param name="logger">Logger instance</param>
     /// <param name="interval">Time between messages (default: 5 seconds)</param>
-    /// <param name="targetNames">Target names to route to (empty = all targets)</param>
+    /// <param name="transport">Transport proxy to route to</param>
     public TimerSource(
         ILogger<TimerSource> logger,
         TimeSpan? interval = null,
-        List<string>? targetNames = null)
+        ITransport? transport = null)
     {
         _logger = logger;
         _interval = interval ?? TimeSpan.FromSeconds(5);
-        _targetNames = targetNames ?? [];
+        _transport = transport;
     }
 
     public Task StartAsync(CancellationToken cancellationToken)

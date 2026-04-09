@@ -1,31 +1,32 @@
-using Iris.Configuration;
 using Iris.Core;
 using Iris.Core.Plugins;
 using Iris.Plugins.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Iris.Plugins.Sources;
+namespace Iris.Plugins.Connectors;
 
 /// <summary>
 /// Reads new files from a local directory, raises <see cref="MessageReceived"/>
 /// for each one, then deletes the file.
 /// </summary>
-[Plugin("FileReader", "1.0.0", PluginType.Source, 
+[Plugin("FilesystemWatcher", "1.0.0", PluginType.Connector, 
     Author = "Iris Team", 
     Description = "Monitors a directory for new files and processes them")]
-public sealed class FileReaderSource : ISource, IDisposable
+public sealed class FilesystemWatcherConnector : IConnector, IDisposable
 {
-    private readonly FileReaderOptions _options;
-    private readonly ILogger<FileReaderSource> _logger;
+    private readonly FilesystemWatcherOptions _options;
+    private readonly ILogger<FilesystemWatcherConnector> _logger;
     private FileSystemWatcher? _watcher;
 
+    public string Name => _options.Name;
+    public ITransport? Transport { get; }
     public event Func<DataMessage, Task>? MessageReceived;
-    public IReadOnlyList<string> TargetNames => _options.Targets;
 
-    public FileReaderSource(IConfiguration configuration, ILogger<FileReaderSource> logger)
+    public FilesystemWatcherConnector(FilesystemWatcherOptions options, ITransport? transport, ILogger<FilesystemWatcherConnector> logger)
     {
-        _options = configuration.GetSection("Sources:FileReader").Get<FileReaderOptions>() ?? new FileReaderOptions();
+        _options = options;
+        Transport = transport;
         _logger = logger;
     }
 
@@ -33,13 +34,13 @@ public sealed class FileReaderSource : ISource, IDisposable
     {
         if (!_options.Enabled)
         {
-            _logger.LogInformation("FileReaderSource is disabled.");
+            _logger.LogInformation("FilesystemWatcherConnector is disabled.");
             return Task.CompletedTask;
         }
 
         if (string.IsNullOrWhiteSpace(_options.ReadPath))
         {
-            _logger.LogWarning("FileReaderSource is enabled but ReadPath is not configured. Skipping.");
+            _logger.LogWarning("FilesystemWatcherConnector is enabled but ReadPath is not configured. Skipping.");
             return Task.CompletedTask;
         }
 
@@ -53,7 +54,7 @@ public sealed class FileReaderSource : ISource, IDisposable
 
         _watcher.Created += OnFileCreated;
 
-        _logger.LogInformation("FileReaderSource reading from {Path} for {Filter}.",
+        _logger.LogInformation("FilesystemWatcherConnector reading from {Path} for {Filter}.",
             _options.ReadPath, _options.Filter);
 
         return Task.CompletedTask;
@@ -67,7 +68,7 @@ public sealed class FileReaderSource : ISource, IDisposable
             _watcher.Created -= OnFileCreated;
         }
 
-        _logger.LogInformation("FileReaderSource stopped.");
+        _logger.LogInformation("FilesystemWatcherConnector stopped.");
         return Task.CompletedTask;
     }
 

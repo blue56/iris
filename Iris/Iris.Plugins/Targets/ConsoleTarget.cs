@@ -8,14 +8,16 @@ namespace Iris.Plugins.Targets;
 /// Example plugin that writes messages to the console with formatting.
 /// Useful for debugging and monitoring.
 /// </summary>
-[Plugin("ConsoleTarget", "1.0.0", PluginType.Target,
+[Plugin("ConsoleTarget", "1.0.0", PluginType.Transport,
     Author = "Iris Plugins",
     Description = "Writes messages to the console with optional color formatting")]
-public sealed class ConsoleTarget : ITarget
+public sealed class ConsoleTarget : ITransport
 {
     private readonly ILogger<ConsoleTarget> _logger;
     private readonly bool _useColors;
     private readonly string _name;
+
+    public event Func<DataMessage, Task>? MessageReceived;
 
     public string Name => _name;
 

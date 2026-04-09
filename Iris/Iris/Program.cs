@@ -1,4 +1,8 @@
-﻿using Iris.Configuration;
+﻿// ---------------------------------------------------------------------------
+// The agent loads packages and runs plugins.
+// ---------------------------------------------------------------------------
+
+using Iris.Configuration;
 using Iris.Configuration;
 using Iris.Core;
 using Iris.Core.Plugins;

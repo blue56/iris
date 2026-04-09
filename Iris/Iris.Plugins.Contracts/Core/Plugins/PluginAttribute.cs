@@ -18,7 +18,11 @@ public sealed class PluginAttribute : Attribute
     /// <summary>Brief description of the plugin's functionality.</summary>
     public string Description { get; set; } = string.Empty;
 
-    /// <summary>Type of plugin functionality implemented by the attributed class.</summary>
+    /// <summary>
+    /// Whether the attributed class is a <see cref="PluginType.Connector"/> (domain
+    /// integration — what you are talking to) or a <see cref="PluginType.Transport"/>
+    /// (protocol channel — how data is moved).
+    /// </summary>
     public PluginType Type { get; }
 
     /// <summary>

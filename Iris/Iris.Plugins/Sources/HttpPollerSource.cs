@@ -10,21 +10,22 @@ namespace Iris.Plugins.Sources;
 /// Example plugin that polls an HTTP endpoint for data.
 /// Useful for integrating with REST APIs.
 /// </summary>
-[Plugin("HttpPollerSource", "1.0.0", PluginType.Source,
+[Plugin("HttpPollerSource", "1.0.0", PluginType.Connector,
     Author = "Iris Plugins",
     Description = "Polls an HTTP endpoint at regular intervals and forwards the response")]
-public sealed class HttpPollerSource : ISource, IDisposable
+public sealed class HttpPollerSource : IConnector, IDisposable
 {
     private readonly ILogger<HttpPollerSource> _logger;
     private readonly HttpClient _httpClient;
     private readonly string _url;
     private readonly TimeSpan _pollInterval;
-    private readonly List<string> _targetNames;
+    private readonly ITransport? _transport;
     private Timer? _timer;
     private bool _enabled;
 
     public event Func<DataMessage, Task>? MessageReceived;
-    public IReadOnlyList<string> TargetNames => _targetNames;
+    public ITransport? Transport => _transport;
+    public string Name { get; } = "httpPoller";
 
     /// <summary>
     /// Creates an HTTP poller source.
@@ -33,19 +34,19 @@ public sealed class HttpPollerSource : ISource, IDisposable
     /// <param name="httpClient">HTTP client for making requests</param>
     /// <param name="url">URL to poll</param>
     /// <param name="pollInterval">Interval between polls (default: 30 seconds)</param>
-    /// <param name="targetNames">Target names to route to</param>
+    /// <param name="transport">Transport to route to</param>
     public HttpPollerSource(
         ILogger<HttpPollerSource> logger,
         HttpClient httpClient,
         string url,
         TimeSpan? pollInterval = null,
-        List<string>? targetNames = null)
+        ITransport? transport = null)
     {
         _logger = logger;
         _httpClient = httpClient;
         _url = url;
         _pollInterval = pollInterval ?? TimeSpan.FromSeconds(30);
-        _targetNames = targetNames ?? [];
+        _transport = transport;
         _enabled = false;
     }
 
