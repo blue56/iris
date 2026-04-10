@@ -10,7 +10,7 @@ using Iris.Plugins.Messaging;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
-namespace Iris.Plugins.Targets;
+namespace Iris.Plugins.Transports;
 
 /// <summary>
 /// A unified MQTT transport that can both publish and subscribe to MQTT topics.

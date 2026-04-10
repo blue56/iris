@@ -1,7 +1,6 @@
 using Iris.Core.Plugins;
 using Iris.Plugins.Connectors;
-using Iris.Plugins.Sources;
-using Iris.Plugins.Targets;
+using Iris.Plugins.Transports;
 
 namespace Iris.Plugins;
 
@@ -19,13 +18,9 @@ public sealed class BuiltInPluginRegistrar : IPluginRegistrar
     {
         // Connectors — domain integrations (what the agent talks to)
         factory.RegisterConnectorType("FilesystemWatcher", typeof(FilesystemWatcherConnector));
-        factory.RegisterConnectorType("HttpPoller",    typeof(HttpPollerSource));
-        factory.RegisterConnectorType("Timer",         typeof(TimerSource));
         factory.RegisterConnectorType("FileWriter",    typeof(FileWriterConnector));
 
         // Transports — protocol channels (how data moves)
         factory.RegisterTransportType("Mqtt",          typeof(MqttTransport));
-        factory.RegisterTransportType("HttpWebhook",   typeof(HttpWebhookTarget));
-        factory.RegisterTransportType("Console",       typeof(ConsoleTarget));
     }
 }
