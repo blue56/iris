@@ -17,6 +17,12 @@ public interface ITransport
     /// <summary>Unique name used to reference this transport from connector routing configuration.</summary>
     string Name { get; }
 
+    /// <summary>Whether this transport supports sending messages.</summary>
+    bool CanSend => true;
+
+    /// <summary>Whether this transport supports receiving messages.</summary>
+    bool CanReceive => true;
+
     /// <summary>Deliver the message over the transport's protocol.</summary>
     Task SendAsync(DataMessage message, CancellationToken cancellationToken) => Task.CompletedTask;
 

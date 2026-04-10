@@ -34,8 +34,15 @@ public sealed class PipelineEngine : BackgroundService
             var transport = connector.Transport;
             if (transport != null)
             {
-                connector.MessageReceived += msg => DispatchToTransportAsync(msg, transport, stoppingToken);
-                transport.MessageReceived += msg => DispatchToConnectorAsync(msg, connector, stoppingToken);
+                if (transport.CanSend)
+                {
+                    connector.MessageReceived += msg => DispatchToTransportAsync(msg, transport, stoppingToken);
+                }
+
+                if (transport.CanReceive && ConnectorSupportsInboundDispatch(connector))
+                {
+                    transport.MessageReceived += msg => DispatchToConnectorAsync(msg, connector, stoppingToken);
+                }
 
                 await transport.StartAsync(stoppingToken);
             }
@@ -67,7 +74,22 @@ public sealed class PipelineEngine : BackgroundService
 
     private async Task DispatchToConnectorAsync(DataMessage message, IConnector connector, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Dispatching message {Id} from transport to connector {Connector}.", message.Id, connector.GetType().Name);
+        if (connector.Transport?.CanReceive == false || !ConnectorSupportsInboundDispatch(connector))
+        {
+            return;
+        }
+
+        _logger.LogInformation("Dispatching message {Id} from transport to connector {Connector}.", message.Id, connector.Name);
         await connector.SendAsync(message, cancellationToken);
+    }
+
+    private static bool ConnectorSupportsInboundDispatch(IConnector connector)
+    {
+        var sendAsyncMethod = connector.GetType().GetMethod(
+            nameof(IConnector.SendAsync),
+            [typeof(DataMessage), typeof(CancellationToken)]);
+
+        return sendAsyncMethod is not null
+            && sendAsyncMethod.DeclaringType != typeof(IConnector);
     }
 }

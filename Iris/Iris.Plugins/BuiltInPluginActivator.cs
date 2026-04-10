@@ -42,6 +42,14 @@ public sealed class BuiltInPluginActivator : IPluginActivator
                 if (string.Equals(tType, "Mqtt", StringComparison.OrdinalIgnoreCase))
                 {
                     var options = transportSection.Get<MqttOptions>() ?? new MqttOptions();
+
+                    var configuredDirection = transportSection["direction"];
+                    if (!string.IsNullOrWhiteSpace(configuredDirection)
+                        && Enum.TryParse<TransportDirection>(configuredDirection, true, out var parsedDirection))
+                    {
+                        options.DirectionEnum = parsedDirection;
+                    }
+
                     if (!string.IsNullOrWhiteSpace(options.BrokerHost))
                     {
                         transport = factory.CreateTransport("Mqtt", services, options);

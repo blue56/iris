@@ -29,6 +29,8 @@ public sealed class MqttTransport : ITransport, IDisposable
     private CancellationTokenSource? _cts;
 
     public string Name => _options.Name;
+    public bool CanSend => _options.DirectionEnum != TransportDirection.Receive;
+    public bool CanReceive => _options.DirectionEnum != TransportDirection.Send;
     public event Func<DataMessage, Task>? MessageReceived;
 
     public MqttTransport(MqttOptions options, ILogger<MqttTransport> logger, ILoggerFactory loggerFactory)
@@ -45,6 +47,14 @@ public sealed class MqttTransport : ITransport, IDisposable
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
+        _logger.LogInformation("MqttTransport ({Name}) starting with Direction = {Direction}", Name, _options.DirectionEnum);
+
+        if (!CanReceive)
+        {
+            _logger.LogInformation("MqttTransport ({Name}) skipping listener start because it is Send-only.", Name);
+            return;
+        }
+
         if (!_options.Enabled || string.IsNullOrWhiteSpace(_options.SubscribeTopic))
         {
             return; // Not configured as a listener
@@ -77,6 +87,11 @@ public sealed class MqttTransport : ITransport, IDisposable
 
     public async Task SendAsync(DataMessage message, CancellationToken cancellationToken)
     {
+        if (!CanSend)
+        {
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_options.BrokerHost))
         {
             _logger.LogWarning("Cannot send message {Id} - MQTT BrokerHost is not configured.", message.Id);
@@ -123,10 +138,13 @@ public sealed class MqttTransport : ITransport, IDisposable
 
     private async Task OnMqttMessageReceived(DataMessage message)
     {
+        if (!CanReceive)
+        {
+            return;
+        }
+
         if (MessageReceived != null)
         {
-            // Just invoke without the full dedup store for brevity unless requested.
-            // Simplified handling for unified transport.
             try
             {
                 await MessageReceived(message);
