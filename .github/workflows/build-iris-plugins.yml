@@ -1,0 +1,51 @@
+name: Build Iris.Plugins
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '.github/workflows/build-iris-plugins.yml'
+      - 'Iris/Iris.sln'
+      - 'Iris/Iris.Plugins/**'
+      - 'Iris/Iris.Core/**'
+      - 'Iris/Iris.Plugins.Contracts/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - '.github/workflows/build-iris-plugins.yml'
+      - 'Iris/Iris.sln'
+      - 'Iris/Iris.Plugins/**'
+      - 'Iris/Iris.Core/**'
+      - 'Iris/Iris.Plugins.Contracts/**'
+
+jobs:
+  build-plugin:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: Iris
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore Iris.Plugins/Iris.Plugins.csproj
+
+      - name: Build plugin
+        run: dotnet build Iris.Plugins/Iris.Plugins.csproj --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Upload plugin artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Iris.Plugins
+          path: Iris/Iris/bin/Release/net9.0/packages
+          if-no-files-found: error
