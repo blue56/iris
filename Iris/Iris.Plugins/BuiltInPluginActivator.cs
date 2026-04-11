@@ -53,7 +53,6 @@ public sealed class BuiltInPluginActivator : IPluginActivator
 
                     if (options.DirectionEnum == TransportDirection.Send)
                     {
-                        options.SubscribeTopic = string.Empty;
                         options.Enabled = false;
                     }
 

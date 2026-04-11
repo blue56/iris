@@ -37,6 +37,5 @@ public sealed class MqttOptions
 
     // Listening options
     public bool Enabled { get; set; } = false;
-    public string SubscribeTopic { get; set; } = string.Empty;
     public MessageStoreOptions? MessageStore { get; set; }
 }

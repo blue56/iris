@@ -51,15 +51,11 @@ public sealed class MqttTransport : ITransport, IDisposable
 
         if (!CanReceive)
         {
-            if (!string.IsNullOrWhiteSpace(_options.SubscribeTopic))
-            {
-                _logger.LogInformation("MqttTransport ({Name}) ignoring SubscribeTopic because direction is Send.", Name);
-            }
             _logger.LogInformation("MqttTransport ({Name}) skipping listener start because it is Send-only.", Name);
             return;
         }
 
-        if (!_options.Enabled || string.IsNullOrWhiteSpace(_options.SubscribeTopic))
+        if (!_options.Enabled || string.IsNullOrWhiteSpace(_options.Topic))
         {
             return; // Not configured as a listener
         }
@@ -71,7 +67,7 @@ public sealed class MqttTransport : ITransport, IDisposable
         }
 
         _logger.LogInformation("MqttTransport starting listener on {Host}:{Port}, topic: {Topic}", 
-            _options.BrokerHost, _options.BrokerPort, _options.SubscribeTopic);
+            _options.BrokerHost, _options.BrokerPort, _options.Topic);
 
         await ConnectReceiverAsync(cancellationToken);
 
@@ -137,7 +133,7 @@ public sealed class MqttTransport : ITransport, IDisposable
             _mqttReceiverClient = new MqttMessageQueueClient(
                 _options.BrokerHost,
                 _options.BrokerPort,
-                _options.SubscribeTopic,
+                _options.Topic,
                 _options.Username,
                 _options.Password,
                 _loggerFactory.CreateLogger<MqttMessageQueueClient>());
