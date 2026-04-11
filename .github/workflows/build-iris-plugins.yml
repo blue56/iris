@@ -47,5 +47,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Iris.Plugins
-          path: Iris/Iris/bin/Release/net9.0/plugins
+          path: Iris/Iris/bin/Release/net9.0/packages
           if-no-files-found: error
