@@ -24,7 +24,7 @@
   <Target Name="CopyPluginsToOutput" AfterTargets="Build">
     <PropertyGroup>
       <_HostOutputDir>$(MSBuildThisFileDirectory)..\Iris\bin\$(Configuration)\net9.0\</_HostOutputDir>
-      <_PluginRootDir>$(_HostOutputDir)plugins\</_PluginRootDir>
+      <_PluginRootDir>$(_HostOutputDir)packages\</_PluginRootDir>
       <_PluginDestDir>$(_PluginRootDir)$(AssemblyName)\</_PluginDestDir>
     </PropertyGroup>
     <MakeDir Directories="$(_PluginRootDir);$(_PluginDestDir)" />
@@ -76,7 +76,6 @@
 
   <ItemGroup>
     <Folder Include="Messaging\" />
-    <Folder Include="Sources\" />
   </ItemGroup>
 
 </Project>

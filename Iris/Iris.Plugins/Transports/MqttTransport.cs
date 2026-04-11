@@ -51,6 +51,10 @@ public sealed class MqttTransport : ITransport, IDisposable
 
         if (!CanReceive)
         {
+            if (!string.IsNullOrWhiteSpace(_options.SubscribeTopic))
+            {
+                _logger.LogInformation("MqttTransport ({Name}) ignoring SubscribeTopic because direction is Send.", Name);
+            }
             _logger.LogInformation("MqttTransport ({Name}) skipping listener start because it is Send-only.", Name);
             return;
         }
@@ -122,6 +126,12 @@ public sealed class MqttTransport : ITransport, IDisposable
 
     private async Task ConnectReceiverAsync(CancellationToken cancellationToken)
     {
+        if (!CanReceive)
+        {
+            _logger.LogInformation("MqttTransport ({Name}) receiver connection skipped because direction is Send.", Name);
+            return;
+        }
+
         if (_mqttReceiverClient == null)
         {
             _mqttReceiverClient = new MqttMessageQueueClient(
