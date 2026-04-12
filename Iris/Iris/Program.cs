@@ -20,9 +20,11 @@ using YamlDotNet.Serialization;
 var yamlPath = Path.Combine(AppContext.BaseDirectory, "appsettings.yaml");
 
 if (!File.Exists(yamlPath))
-    throw new FileNotFoundException(
-        $"Required configuration file not found. Ensure 'appsettings.yaml' is set to copy to the output directory.",
-        yamlPath);
+{
+    Console.Error.WriteLine("Iris could not start because the configuration file 'appsettings.yaml' is missing.");
+    Console.Error.WriteLine($"  Expected location: {yamlPath}");
+    return;
+}
 
 Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Loading configuration from: {yamlPath}");
 
