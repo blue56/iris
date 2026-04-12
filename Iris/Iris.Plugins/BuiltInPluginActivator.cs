@@ -1,5 +1,4 @@
 using Iris.Core;
-using Iris.Core;
 using Iris.Core.Plugins;
 using Iris.Plugins.Configuration;
 using Microsoft.Extensions.Configuration;
