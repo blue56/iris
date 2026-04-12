@@ -23,6 +23,7 @@ if (!File.Exists(yamlPath))
 {
     Console.Error.WriteLine("Iris could not start because the configuration file 'appsettings.yaml' is missing.");
     Console.Error.WriteLine($"  Expected location: {yamlPath}");
+    Environment.ExitCode = 1;
     return;
 }
 
