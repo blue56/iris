@@ -8,6 +8,7 @@ on:
       - '.github/workflows/build-iris-plugins.yml'
       - 'Iris/Iris.sln'
       - 'Iris/Iris.Plugins/**'
+      - 'Iris/Iris.Plugins.MQTT/**'
       - 'Iris/Iris.Core/**'
       - 'Iris/Iris.Plugins.Contracts/**'
   pull_request:
@@ -16,6 +17,7 @@ on:
       - '.github/workflows/build-iris-plugins.yml'
       - 'Iris/Iris.sln'
       - 'Iris/Iris.Plugins/**'
+      - 'Iris/Iris.Plugins.MQTT/**'
       - 'Iris/Iris.Core/**'
       - 'Iris/Iris.Plugins.Contracts/**'
 
@@ -38,10 +40,15 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore
-        run: dotnet restore Iris.Plugins/Iris.Plugins.csproj
+        run: |
+          dotnet restore Iris.Plugins/Iris.Plugins.csproj
+          dotnet restore Iris.Plugins.MQTT/Iris.Plugins.MQTT.csproj
 
       - name: Build plugin
         run: dotnet build Iris.Plugins/Iris.Plugins.csproj --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
+
+      - name: Build MQTT plugin
+        run: dotnet build Iris.Plugins.MQTT/Iris.Plugins.MQTT.csproj --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
 
       - name: Upload plugin artifact
         uses: actions/upload-artifact@v4
