@@ -93,13 +93,11 @@ jobs:
       run: dotnet build ${{ env.PLUGINS_PROJECT }} --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
     - name: Build Iris.Plugins.MQTT (Release)
       run: dotnet build ${{ env.MQTT_PROJECT }} --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
-    - name: Zip plugins
-      run: Compress-Archive -Path Iris/Iris/bin/Release/net9.0/packages -DestinationPath iris-plugins.zip
     - name: Upload plugins artifact
       uses: actions/upload-artifact@v4
       with:
         name: iris-plugins
-        path: iris-plugins.zip
+        path: Iris/Iris/bin/Release/net9.0/packages
         if-no-files-found: error
 
   release:
