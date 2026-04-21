@@ -13,6 +13,7 @@ on:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   PROJECT: Iris/Iris/Iris.csproj
+  PLUGINS_PROJECT: Iris/Iris.Plugins/Iris.Plugins.csproj
   MQTT_PROJECT: Iris/Iris.Plugins.MQTT/Iris.Plugins.MQTT.csproj
 
 jobs:
@@ -69,7 +70,7 @@ jobs:
         name: ${{ matrix.artifact }}
         path: publish/${{ matrix.rid }}
 
-  publish-mqtt-plugin:
+  publish-plugins:
 
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
@@ -84,23 +85,26 @@ jobs:
     - name: Restore
       run: |
         dotnet restore ${{ env.PROJECT }}
+        dotnet restore ${{ env.PLUGINS_PROJECT }}
         dotnet restore ${{ env.MQTT_PROJECT }}
     - name: Build Iris (Release)
       run: dotnet build ${{ env.PROJECT }} --configuration Release --no-restore -p:DebugType=none
+    - name: Build Iris.Plugins (Release)
+      run: dotnet build ${{ env.PLUGINS_PROJECT }} --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
     - name: Build Iris.Plugins.MQTT (Release)
       run: dotnet build ${{ env.MQTT_PROJECT }} --configuration Release --no-restore -p:ContinuousIntegrationBuild=true
-    - name: Zip MQTT plugin
-      run: Compress-Archive -Path Iris/Iris/bin/Release/net9.0/packages/Iris.Plugins.MQTT -DestinationPath iris-mqtt-plugin.zip
-    - name: Upload MQTT plugin artifact
+    - name: Zip plugins
+      run: Compress-Archive -Path Iris/Iris/bin/Release/net9.0/packages -DestinationPath iris-plugins.zip
+    - name: Upload plugins artifact
       uses: actions/upload-artifact@v4
       with:
-        name: iris-mqtt-plugin
-        path: iris-mqtt-plugin.zip
+        name: iris-plugins
+        path: iris-plugins.zip
         if-no-files-found: error
 
   release:
 
-    needs: [publish, publish-mqtt-plugin]
+    needs: [publish, publish-plugins]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
