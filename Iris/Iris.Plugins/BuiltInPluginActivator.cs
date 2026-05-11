@@ -54,6 +54,11 @@ public sealed class BuiltInPluginActivator : IPluginActivator
                     if (connector != null) registry.RegisterConnector(connector);
                 }
             }
+            else
+            {
+                // Delegate to the factory so Iris.Core owns the "type not recognized" diagnostic.
+                factory.CreateConnector(type, services);
+            }
         }
 
         await Task.CompletedTask;

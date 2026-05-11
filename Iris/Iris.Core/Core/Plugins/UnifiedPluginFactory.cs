@@ -87,7 +87,9 @@ public sealed class UnifiedPluginFactory : IPluginFactory
     {
         if (!_transportTypes.TryGetValue(typeName, out var type))
         {
-            _logger.LogWarning("Unknown transport type: {TypeName}. Available types: {Types}",
+            _logger.LogError(
+                "Transport '{TypeName}' is referenced in configuration but was not loaded. " +
+                "Ensure the plugin assembly is present. Available types: {Types}",
                 typeName, string.Join(", ", _transportTypes.Keys));
             return null;
         }
@@ -109,7 +111,9 @@ public sealed class UnifiedPluginFactory : IPluginFactory
     {
         if (!_connectorTypes.TryGetValue(typeName, out var type))
         {
-            _logger.LogWarning("Unknown connector type: {TypeName}. Available types: {Types}",
+            _logger.LogError(
+                "Connector '{TypeName}' is referenced in configuration but was not loaded. " +
+                "Ensure the plugin assembly is present. Available types: {Types}",
                 typeName, string.Join(", ", _connectorTypes.Keys));
             return null;
         }
